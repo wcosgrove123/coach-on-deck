@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swim Practice Builder</title>
+    <style>
+        :root {
+            --primary-bg: #f0f8ff; /* AliceBlue */
+            --secondary-bg: #ffffff;
+            --border-color: #b0c4de; /* LightSteelBlue */
+            --header-bg: #4682b4; /* SteelBlue */
+            --header-text: #ffffff;
+            --button-bg: #5a9bd5;
+            --button-hover: #4a8ac9;
+            --delete-bg: #e57373;
+            --delete-hover: #d32f2f;
+            --text-color: #333;
+            --input-border: #ccc;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: var(--secondary-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--header-bg);
+            margin-top: 0;
+        }
+        .practice-totals {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .practice-totals h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .practice-totals span {
+            display: block;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .set {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        .set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .set-header label {
+            font-weight: bold;
+        }
+        .set-header input[type="number"] {
+            width: 50px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        .set-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .set-table th, .set-table td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .set-table th {
+            color: var(--header-bg);
+            font-size: 0.9em;
+        }
+        .set-table input {
+            width: 95%;
+            padding: 6px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+        }
+        .set-table input.reps, .set-table input.dist { width: 50px; }
+        .set-table input.interval { width: 70px; }
+        .set-table .pace-output {
+            font-weight: bold;
+            color: #0056b3;
+            white-space: nowrap;
+        }
+        .set-table .delete-row-btn {
+            font-size: 1.2em;
+            color: var(--delete-bg);
+            cursor: pointer;
+            text-align: center;
+            user-select: none;
+        }
+        .set-footer {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .set-totals {
+            font-weight: bold;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .add-row-btn { background-color: var(--button-bg); }
+        .add-set-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            background-color: var(--button-bg);
+        }
+        .add-row-btn:hover, .add-set-btn:hover { background-color: var(--button-hover); }
+        .delete-btn { background-color: var(--delete-bg); }
+        .delete-btn:hover { background-color: var(--delete-hover); }
+
+        /* AI Agent */
+        .ai-assistant {
+            background: #eef4f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+        .ai-assistant h3 { margin-top: 0; color: var(--header-bg); }
+        .ai-assistant textarea {
+            width: 98%;
+            min-height: 60px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--input-border);
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .ai-status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+    </style>
+</head>
+<div class="container">
+    <h1>Swim Practice Builder</h1>
+
+    <div class="ai-assistant">
+        <h3>🤖 AI Coach Assistant</h3>
+        <p>Describe the practice you want to build (e.g., "A 4500 yard threshold workout for senior swimmers with a focus on freestyle").</p>
+        <textarea id="ai-prompt" placeholder="Enter your goal here..."></textarea>
+        <button id="generate-practice-btn" class="btn add-set-btn">Generate Practice</button>
+        <div id="ai-status" class="ai-status"></div>
+    </div>
+    
+    <div class="practice-totals">
+        <div>
+            <h2>TOTAL YARDS</h2>
+            <span id="total-yards">0</span>
+        </div>
+        <div>
+            <h2>TOTAL TIME</h2>
+            <span id="total-time">00:00:00</span>
+        </div>
+    </div>
+
+    <div id="sets-container">
+        </div>
+    
+    <button id="add-set" class="btn add-set-btn">+ Add New Set</button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM ELEMENT REFERENCES ---
+        const setsContainer = document.getElementById('sets-container');
+        const addSetBtn = document.getElementById('add-set');
+        const generateBtn = document.getElementById('generate-practice-btn');
+        const aiPromptEl = document.getElementById('ai-prompt');
+        const aiStatusEl = document.getElementById('ai-status');
+
+        let setCounter = 0;
+
+        // --- EVENT LISTENERS ---
+        addSetBtn.addEventListener('click', addSet);
+        generateBtn.addEventListener('click', handleAIGeneration);
+        setsContainer.addEventListener('click', handleSetContainerClick);
+        setsContainer.addEventListener('input', handleInputChange);
+
+        // --- CORE UI FUNCTIONS ---
+
+        function addSet() {
+            setCounter++;
+            const setEl = document.createElement('div');
+            setEl.className = 'set';
+            setEl.dataset.setId = setCounter;
+            setEl.innerHTML = `
+                <div class="set-header">
+                    <h3>SET ${setCounter}</h3>
+                    <div>
+                        <label>Repeat Set: </label>
+                        <input type="number" class="set-repetitions" value="1" min="1">
+                        <span>x</span>
+                    </div>
+                    <button class="btn delete-btn delete-set-btn">Delete Set</button>
+                </div>
+                <table class="set-table">
+                    <thead><tr><th>Reps</th><th>Dist</th><th>Interval</th><th>Description</th><th>Pace/100</th><th></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <div class="set-footer">
+                    <button class="btn add-row-btn">Add Row</button>
+                    <div class="set-totals"><span>Set Total: 0 yds, 00:00</span></div>
+                </div>
+            `;
+            setsContainer.appendChild(setEl);
+            addRow(setEl.querySelector('tbody'));
+        }
+
+        function addRow(tbody) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="number" class="reps" value="1" min="1"></td>
+                <td><input type="number" class="dist" placeholder="100" min="1"></td>
+                <td><input type="text" class="interval" placeholder="m:ss"></td>
+                <td><input type="text" class="desc" placeholder="Freestyle, kick, drill..."></td>
+                <td class="pace-output">-:--</td>
+                <td><span class="delete-row-btn">&times;</span></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function handleSetContainerClick(e) {
+            if (e.target.classList.contains('add-row-btn')) {
+                addRow(e.target.closest('.set').querySelector('tbody'));
+            } else if (e.target.classList.contains('delete-row-btn')) {
+                e.target.closest('tr').remove();
+                updateAllCalculations();
+            } else if (e.target.classList.contains('delete-set-btn')) {
+                e.target.closest('.set').remove();
+                updateAllCalculations();
+            }
+        }
+        
+        function handleInputChange(e) {
+            if (e.target.tagName === 'INPUT') {
+                updateAllCalculations();
+            }
+        }
+
+        // --- AI INTEGRATION ---
+
+        async function handleAIGeneration() {
+            const userInput = aiPromptEl.value.trim();
+            if (!userInput) {
+                alert("Please describe the practice you want to generate.");
+                return;
+            }
+
+            aiStatusEl.textContent = "🤖 Thinking... Generating practice...";
+            generateBtn.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:11434/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama3.2:3b', // <-- IMPORTANT: Use your specific model name here
+                        prompt: createAIPrompt(userInput),
+                        stream: false,
+                        format: 'json',
+                    }),
+                });
+
+                if (!response.ok) throw new Error(`Ollama API Error: ${response.statusText}`);
+                
+                const data = await response.json();
+                const practiceData = JSON.parse(data.response);
+                
+                populatePracticeFromAI(practiceData);
+                aiStatusEl.textContent = "✅ Practice generated successfully!";
+            } catch (error) {
+                console.error("Error calling Ollama API:", error);
+                aiStatusEl.textContent = "❌ Error! Could not generate practice. (See Troubleshooting below)";
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+
+        function populatePracticeFromAI(practiceData) {
+            setsContainer.innerHTML = ''; // Clear existing sets
+            setCounter = 0;
+            document.querySelector('h1').textContent = practiceData.title || "AI Generated Practice";
+            
+            practiceData.sets.forEach(set => {
+                addSet();
+                const newSetEl = setsContainer.lastChild;
+                newSetEl.querySelector('.set-repetitions').value = set.setRepetitions || 1;
+                
+                const tbody = newSetEl.querySelector('tbody');
+                tbody.innerHTML = ''; // Clear default row
+
+                set.rows.forEach(rowData => {
+                    addRow(tbody);
+                    const newRowEl = tbody.lastChild;
+                    newRowEl.querySelector('.reps').value = rowData.reps;
+                    newRowEl.querySelector('.dist').value = rowData.distance;
+                    newRowEl.querySelector('.interval').value = rowData.interval;
+                    newRowEl.querySelector('.desc').value = rowData.description;
+                });
+            });
+            updateAllCalculations();
+        }
+
+        function createAIPrompt(userInput) {
+            // This is a much more detailed "system prompt" to guide the AI.
+            const systemPrompt = `
+                You are an expert swimming coach AI. Your task is to generate a complete, well-structured swimming practice based on the user's goal.
+                **Workout Design Principles:**
+                1.  **Structure:** A practice must include at least three distinct sets: a Warmup, a Main Set, and a Cool Down. It can also include a Pre-Set (before the main set) or a Secondary Set.
+                2.  **Variety:** Include a mix of strokes (freestyle, backstroke, etc.), kicking, pulling, and drills. Do not make the entire practice one stroke unless specified.
+                3.  **Clarity:** The description for each row should be clear and concise (e.g., "Kick w/ board", "Pull w/ paddles", "Build each 50").
+
+                **JSON Output Rules:**
+                You MUST respond with ONLY a valid JSON object. Do not include any text before or after the JSON.
+                The JSON object must have a "title" and a "sets" array. Each object in the "sets" array must have "setRepetitions" and a "rows" array. Each object in the "rows" array must have "reps", "distance", "interval", and "description".
+
+                **User Goal:** "${userInput}"
+
+                Now, generate a creative and effective practice based on these principles and the user's goal.
+            `;
+            return systemPrompt;
+        }
+        
+        // --- CALCULATION LOGIC ---
+
+        function updateAllCalculations() {
+            let practiceTotalYards = 0;
+            let practiceTotalSeconds = 0;
+
+            document.querySelectorAll('.set').forEach(setEl => {
+                let setTotalYards = 0;
+                let setTotalSeconds = 0;
+                const setRepetitions = parseInt(setEl.querySelector('.set-repetitions').value) || 1;
+
+                setEl.querySelectorAll('tbody tr').forEach(rowEl => {
+                    const reps = parseInt(rowEl.querySelector('.reps').value) || 0;
+                    const dist = parseInt(rowEl.querySelector('.dist').value) || 0;
+                    const intervalSec = parseInterval(rowEl.querySelector('.interval').value);
+
+                    const paceOutput = rowEl.querySelector('.pace-output');
+                    paceOutput.textContent = formatPace((dist > 0 && intervalSec > 0) ? intervalSec / (dist / 100) : 0);
+                    
+                    setTotalYards += reps * dist;
+                    setTotalSeconds += reps * intervalSec;
+                });
+                
+                const finalSetYards = setTotalYards * setRepetitions;
+                const finalSetSeconds = setTotalSeconds * setRepetitions;
+                setEl.querySelector('.set-totals span').textContent = `Set Total: ${finalSetYards.toLocaleString()} yds, ${formatTime(finalSetSeconds, true)}`;
+
+                practiceTotalYards += finalSetYards;
+                practiceTotalSeconds += finalSetSeconds;
+            });
+            
+            document.getElementById('total-yards').textContent = practiceTotalYards.toLocaleString();
+            document.getElementById('total-time').textContent = formatTime(practiceTotalSeconds);
+        }
+
+        // --- UTILITY FUNCTIONS ---
+
+        function parseInterval(intervalStr) {
+            if (!intervalStr) return 0;
+            const parts = intervalStr.split(':').map(Number);
+            if (parts.length === 2) return (parts[0] || 0) * 60 + (parts[1] || 0);
+            return parts.length === 1 ? (parts[0] || 0) : 0;
+        }
+
+        function formatTime(totalSeconds, isSet = false) {
+            if (isNaN(totalSeconds) || totalSeconds <= 0) return isSet ? "00:00" : "00:00:00";
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const mmss = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            return isSet ? (hours > 0 ? `${hours}:${mmss}` : mmss) : `${String(hours).padStart(2, '0')}:${mmss}`;
+        }
+
+        function formatPace(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds <= 0) return "-:--";
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Initialize with one set for manual building
+        addSet();
+    });
+</script>
+</body>
+</html>
